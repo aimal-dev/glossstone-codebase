@@ -1,36 +1,12 @@
-import { readFileSync } from 'fs'
-import { fileURLToPath } from 'url'
-import { dirname, join } from 'path'
+import server from '../../dist/server/server.js'
 
-const __filename = fileURLToPath(import.meta.url)
-const __dirname = dirname(__filename)
-
-// Import the server handler from the build output
-const serverPath = join(__dirname, '../../dist/server/server.js')
-const serverModule = await import(serverPath)
-const handler = serverModule.default
-
-export default async (req, context) => {
+export default async (event) => {
   try {
-    // Convert Netlify request format to standard fetch Request
-    const url = new URL(req.url)
-    const headers = new Headers(req.headers)
-
-    const request = new Request(url, {
-      method: req.method,
-      headers,
-      body: ['GET', 'HEAD'].includes(req.method) ? undefined : req.body,
-    })
-
-    // Call the TanStack Start server handler
-    const response = await handler(request)
-    
-    return new Response(response.body, {
-      status: response.status,
-      headers: response.headers,
-    })
+    const request = event.request
+    const response = await server.fetch(request)
+    return response
   } catch (error) {
-    console.error('SSR Error:', error)
+    console.error('Error:', error)
     return new Response('Internal Server Error', { status: 500 })
   }
 }
